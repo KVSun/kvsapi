@@ -11,18 +11,15 @@ abstract class Content implements \JsonSerializable
 
 	private $_data = array();
 	protected $_url;
+	protected $_pdo;
 
-	final public function __construct(\PDO $pdo, $url = null)
+	public function __construct(\PDO $pdo, $url = null)
 	{
 		$this->{self::MAGIC_PROPERTY} = $this::DEFAULTS;
-
+		$this->_pdo = $pdo;
 		$this->_parseURL($url);
-		if ($this->_url['path'] !== '/') {
-			$stm = $pdo->prepare($this->_getSQL());
-			$this->_setData($stm);
-		} else {
-			throw new \Exception('Attempting to load Article for home page');
-		}
+		$stm = $pdo->prepare($this->_getSQL());
+		$this->_setData($stm);
 	}
 
 	final public function __isset($prop)
