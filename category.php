@@ -47,5 +47,6 @@ final class Category extends Abstracts\Content
 
 		$this->_set('category', $cat);
 		$this->_set('articles', $results);
+		$this->_set('title', ucwords($cat));
 	}
 }
