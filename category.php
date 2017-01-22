@@ -32,6 +32,7 @@ final class Category extends Abstracts\Content
 		FROM `posts`
 		JOIN `categories` ON `categories`.`id` = `posts`.`cat-id`
 		WHERE `categories`.`name` = :name
+		ORDER BY `posts`.`posted` DESC
 		LIMIT %d, %d;';
 
 		return sprintf($sql, $this->_start, $this->_end);
