@@ -9,14 +9,41 @@ abstract class Content implements \JsonSerializable
 {
 	const MAGIC_PROPERTY = '_data';
 
+	/**
+	 * [$_data description]
+	 * @var array
+	 */
 	private $_data = array();
-	protected $_url;
+
+	/**
+	 * [$_url description]
+	 * @var array
+	 */
+	protected $_url = array();
+
+	/**
+	 * [$_pdo description]
+	 * @var \PDO
+	 */
 	protected $_pdo;
+
+	/**
+	 * [$_head description]
+	 * @var \stdClass
+	 */
+	private $_head;
 
 	public function __construct(\PDO $pdo, $url = null)
 	{
 		$this->{self::MAGIC_PROPERTY} = $this::DEFAULTS;
 		$this->_pdo = $pdo;
+		$query = $this->_pdo->query('SELECT `name`, `value` FROM `head`;');
+		$query->execute();
+		$this->_head = array_reduce(
+			$query->fetchAll(\PDO::FETCH_CLASS),
+			[$this, '_reduceHead'],
+			new \stdClass()
+		);
 		$this->_parseURL($url);
 		$stm = $pdo->prepare($this->_getSQL());
 		$this->_setData($stm);
@@ -39,13 +66,19 @@ abstract class Content implements \JsonSerializable
 		return [
 			'type' => $this::TYPE,
 			'url' => $this->_url,
+			'head' => $this->_head,
 			'data' => $this->{self::MAGIC_PROPERTY}
 		];
 	}
 
 	final public function __debugInfo()
 	{
-		return $this->{self::MAGIC_PROPERTY};
+		return [
+			'type' => $this::TYPE,
+			'url' => $this->_url,
+			'head' => $this->_head,
+			'data' => $this->{self::MAGIC_PROPERTY}
+		];
 	}
 
 	final protected function _parsePath()
@@ -74,6 +107,12 @@ abstract class Content implements \JsonSerializable
 	{
 		$this->{self::MAGIC_PROPERTY}[$prop] = $value;
 		return $this;
+	}
+
+	final private function _reduceHead(\stdClass $head, \stdClass $item)
+	{
+		$head->{$item->name} = $item->value;
+		return $head;
 	}
 
 	abstract protected function _getSQL();
