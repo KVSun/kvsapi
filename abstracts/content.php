@@ -65,8 +65,8 @@ abstract class Content implements \JsonSerializable
 	{
 		return [
 			'type' => $this::TYPE,
-			'url' => $this->_url,
-			'head' => $this->_head,
+			'url' => $this->getURL(),
+			'head' => $this->getHead(),
 			'data' => $this->{self::MAGIC_PROPERTY}
 		];
 	}
@@ -75,10 +75,25 @@ abstract class Content implements \JsonSerializable
 	{
 		return [
 			'type' => $this::TYPE,
-			'url' => $this->_url,
-			'head' => $this->_head,
+			'url' => $this->getURL(),
+			'head' => $this->getHead(),
 			'data' => $this->{self::MAGIC_PROPERTY}
 		];
+	}
+
+	final public function getHead($prop = null)
+	{
+		return is_null($prop) ? clone($this->_head) : $this->_head->{$prop};
+	}
+
+	final public function getURL()
+	{
+		return $this->_url;
+	}
+
+	final public function getPath()
+	{
+		return $this->_parsePath();
 	}
 
 	final protected function _parsePath()
