@@ -48,8 +48,12 @@ final class Article extends Abstracts\Content
 					$keywords = [];
 				}
 
+				$cat = new \stdClass();
+				$cat->name = $results->category;
+				$cat->url = $results->catURL;
+
 				$this->_set('id', intval($results->id));
-				$this->_set('category', $results->category);
+				$this->_set('category', $cat);
 				$this->_set('title', $results->title);
 				$this->_set('author', $results->author);
 				$this->_set('content', $results->content);
@@ -70,6 +74,7 @@ final class Article extends Abstracts\Content
 	{
 		return 'SELECT `posts`.`id`,
 			`categories`.`name` AS `category`,
+			`categories`.`url-name` AS `catURL`,
 			`posts`.`title`,
 			`posts`.`author`,
 			`posts`.`content`,
