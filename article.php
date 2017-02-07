@@ -27,6 +27,7 @@ final class Article extends Abstracts\Content
 
 		if (count($path) === 2) {
 			list($category, $url) = $path;
+			\shgysk8zer0\Core\Console::info(['category' => $category, 'url' => $url]);
 			$stm->bindParam(':url', $url);
 			$stm->bindParam(':category', $category);
 			$stm->execute();
@@ -83,7 +84,7 @@ final class Article extends Abstracts\Content
 		FROM `posts`
 		JOIN `user_data` ON `posts`.`posted_by` = `user_data`.`id`
 		JOIN `categories` ON `categories`.`id` = `posts`.`cat-id`
-		WHERE `posts`.`url` = :url AND `categories`.`name` = :category
+		WHERE `posts`.`url` = :url AND `categories`.`url-name` = :category
 		LIMIT 1;';
 	}
 }

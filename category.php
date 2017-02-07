@@ -31,7 +31,7 @@ final class Category extends Abstracts\Content
 			`categories`.`parent`
 		FROM `posts`
 		JOIN `categories` ON `categories`.`id` = `posts`.`cat-id`
-		WHERE `categories`.`name` = :name
+		WHERE `categories`.`url-name` = :name
 		ORDER BY `posts`.`posted` DESC
 		LIMIT %d, %d;';
 

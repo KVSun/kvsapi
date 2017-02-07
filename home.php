@@ -29,7 +29,7 @@ final class Home extends Abstracts\Content
 			`categories`.`name` as `category`
 		FROM `posts`
 		JOIN `categories` ON `categories`.`id` = `posts`.`cat-id`
-		WHERE `categories`.`name` = :name
+		WHERE `categories`.`url-name` = :name
 		ORDER BY `posts`.`posted` DESC
 		LIMIT %d;';
 
