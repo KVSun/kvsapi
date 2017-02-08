@@ -3,7 +3,16 @@ namespace KVSun\KVSAPI;
 
 final class Article extends Abstracts\Content
 {
+	/**
+	 * Type of content
+	 * @var string
+	 */
 	const TYPE = 'article';
+
+	/**
+	 * Default content
+	 * @var Array
+	 */
 	const DEFAULTS = [
 		'id'          => null,
 		'category'    => null,
@@ -21,13 +30,16 @@ final class Article extends Abstracts\Content
 		'is_free'     => true,
 	];
 
+	/**
+	 * Required method for setting data
+	 * @param PDOStatement $stm A prepared statment using `\PDO::prepare`
+	 */
 	protected function _setData(\PDOStatement $stm)
 	{
 		$path = $this->_parsePath();
 
 		if (count($path) === 2) {
 			list($category, $url) = $path;
-			\shgysk8zer0\Core\Console::info(['category' => $category, 'url' => $url]);
 			$stm->bindParam(':url', $url);
 			$stm->bindParam(':category', $category);
 			$stm->execute();
@@ -70,7 +82,11 @@ final class Article extends Abstracts\Content
 		}
 	}
 
-	protected function _getSQL()
+	/**
+	 * Required method to get query to execute
+	 * @return String SQL query
+	 */
+	protected function _getSQL(): String
 	{
 		return 'SELECT `posts`.`id`,
 			`categories`.`name` AS `category`,

@@ -33,7 +33,12 @@ abstract class Content implements \JsonSerializable
 	 */
 	private $_head;
 
-	public function __construct(\PDO $pdo, $url = null)
+	/**
+	 * Create instance of content using database & URL
+	 * @param PDO    $pdo Instance of database connection
+	 * @param String $url The URL to get content for
+	 */
+	public function __construct(\PDO $pdo, String $url = null)
 	{
 		$this->{self::MAGIC_PROPERTY} = $this::DEFAULTS;
 		$this->_pdo = $pdo;
@@ -49,19 +54,33 @@ abstract class Content implements \JsonSerializable
 		$this->_setData($stm);
 	}
 
-	final public function __isset($prop)
+	/**
+	 * Checks if a property is set
+	 * @param  String  $prop Property to check
+	 * @return boolean       If it is set
+	 */
+	final public function __isset(String $prop): Bool
 	{
 		return isset($this->{self::MAGIC_PROPERTY}[$prop]);
 	}
 
-	final public function __get($prop)
+	/**
+	 * Gets a property from set data
+	 * @param  String $prop The property
+	 * @return Mixed        Its value, if it exists
+	 */
+	final public function __get(String $prop)
 	{
 		if ($this->__isset($prop)) {
 			return $this->{self::MAGIC_PROPERTY}[$prop];
 		}
 	}
 
-	final public function jsonSerialize()
+	/**
+	 * Returns an array to convert to JSON when calling `json_encode` on class
+	 * @return Array An array of data
+	 */
+	final public function jsonSerialize(): Array
 	{
 		return [
 			'type' => $this::TYPE,
@@ -71,7 +90,11 @@ abstract class Content implements \JsonSerializable
 		];
 	}
 
-	final public function __debugInfo()
+	/**
+	 * Returns an array of data to use when calling `var_dump` on class
+	 * @return Array Array of data
+	 */
+	final public function __debugInfo(): Array
 	{
 		return [
 			'type' => $this::TYPE,
@@ -81,56 +104,91 @@ abstract class Content implements \JsonSerializable
 		];
 	}
 
-	final public function getHead($prop = null)
+	/**
+	 * Retrieve data from `head` table
+	 * @param  String $prop Optional property from head to retrieve instead
+	 * @return Mixed        Data from `head` table
+	 */
+	final public function getHead(String $prop = null)
 	{
 		return is_null($prop) ? clone($this->_head) : $this->_head->{$prop};
 	}
 
-	final public function getURL()
+	/**
+	 * Returns URL parsed as an array
+	 * @return Array ['path' => '...', 'scheme' => '...', 'host' => '...', ...]
+	 */
+	final public function getURL(): Array
 	{
 		return $this->_url;
 	}
 
-	final public function getPath()
+	final public function getPath(): Array
 	{
 		return $this->_parsePath();
 	}
 
-	final protected function _parsePath()
+	/**
+	 * Parses a path of a URL.
+	 * "/path/to/file" becomes ['path', 'to', 'file']
+	 * @return Array Parsed URL path
+	 */
+	final protected function _parsePath(): Array
 	{
 		$path = explode('/', trim($this->_url['path'], '/'));
 		$path = array_filter($path);
 		return $path;
 	}
 
-	final private function _parseURL($url = null)
+	/**
+	 * Parses a URL and sets `$this->_url`
+	 * @param  String $url The optional URL to parse
+	 * @return void
+	 */
+	final private function _parseURL(String $url = null)
 	{
-		if (is_string($url)) {
-			$url = parse_url($url);
-		} else {
-			$url = [];
-		}
+		$url = parse_url($url) ?? [];
 
 		$this->_url = array_merge([
 			'scheme' => $_SERVER['REQUEST_SCHEME'],
-			'host' => $_SERVER['HTTP_HOST'],
-			'path' => $_SERVER['SCRIPT_NAME'],
+			'host'   => $_SERVER['HTTP_HOST'],
+			'path'   => $_SERVER['SCRIPT_NAME'],
 		], $url);
 	}
 
-	final protected function _set($prop, $value)
+	/**
+	 * Protected method for setting data
+	 * @param  String $prop  Name of property to set
+	 * @param  Mixed  $value Value to set it to
+	 * @return self          Return self to make chainable
+	 */
+	final protected function _set(String $prop, $value): self
 	{
 		$this->{self::MAGIC_PROPERTY}[$prop] = $value;
 		return $this;
 	}
 
-	final private function _reduceHead(\stdClass $head, \stdClass $item)
+	/**
+	 * Converts {name, value} into {name: value}
+	 * @param  stdClass  $head Stores data retrieved from `head` table
+	 * @param  stdClass  $item The current item
+	 * @return stdClass        Updated $head
+	 */
+	final private function _reduceHead(\stdClass $head, \stdClass $item): \stdClass
 	{
 		$head->{$item->name} = $item->value;
 		return $head;
 	}
 
-	abstract protected function _getSQL();
+	/**
+	 * Required method to get query to execute
+	 * @return String SQL query
+	 */
+	abstract protected function _getSQL(): String;
 
+	/**
+	 * Required method for setting data
+	 * @param PDOStatement $stm A prepared statment using `\PDO::prepare`
+	 */
 	abstract protected function _setData(\PDOStatement $stm);
 }
