@@ -28,6 +28,7 @@ final class Article extends Abstracts\Content
 		'keywords'    => [],
 		'description' => null,
 		'is_free'     => true,
+		'comments'    => [],
 	];
 
 	/**
@@ -96,6 +97,7 @@ final class Article extends Abstracts\Content
 			'SELECT
 				`post_comments`.`created`,
 				`post_comments`.`text`,
+				`post_comments`.`id` AS `commentID`,
 				`user_data`.`name`,
 				`users`.`username`,
 				`users`.`email`
