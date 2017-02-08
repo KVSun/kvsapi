@@ -63,6 +63,7 @@ final class Article extends Abstracts\Content
 				$cat = new \stdClass();
 				$cat->name = $results->category;
 				$cat->url = $results->catURL;
+				$cat->id = intval($results->catID);
 
 				$this->_set('id', intval($results->id));
 				$this->_set('category', $cat);
@@ -77,8 +78,53 @@ final class Article extends Abstracts\Content
 				$this->_set('posted_by', $results->posted_by);
 				$this->_set('keywords', $keywords);
 				$this->_set('description', $results->description);
-				$this->_set('is_free', !isset($results->is_free) or $results->is_free === '1');
+				$this->_set('is_free', $results->is_free ?? true);
+				$this->_set('comments', $this->_getComments($this->id, $cat->id));
 			}
+		}
+	}
+
+	/**
+	 * Gets an array of comments for post by post ID and category ID
+	 * @param  Int   $post_id ID of post (`posts`.`id`)
+	 * @param  Int   $cat_id  ID of category (`posts`.`cat-id`)
+	 * @return Array          An array of comments for post
+	 */
+	private function _getComments(Int $post_id, Int $cat_id): Array
+	{
+		$stm = $this->_pdo->prepare(
+			'SELECT
+				`post_comments`.`created`,
+				`post_comments`.`text`,
+				`user_data`.`name`,
+				`users`.`username`,
+				`users`.`email`
+			FROM `post_comments`
+			JOIN `posts` ON `posts`.`id` = `post_comments`.`postID`
+				AND `posts`.`cat-id` = `post_comments`.`catID`
+			JOIN `users` ON `users`.`id` = `post_comments`.`userID`
+			JOIN `user_data` ON `user_data`.`id` = `post_comments`.`userID`
+			WHERE `posts`.`id` = :post
+			AND `posts`.`cat-id` = :cat
+			AND `post_comments`.`approved` = 1;'
+		);
+		$stm->bindParam(':post', $post_id);
+		$stm->bindParam(':cat', $cat_id);
+		try {
+			$stm->execute();
+			if (intval($stm->errorCode()) !== 0) {
+				throw new \Exception('SQL Error: '. join(PHP_EOL, $stm->errorInfo()));
+			}
+			$comments = $stm->getResults();
+			// Convert user email to an MD5, useful for Gravatar
+			array_walk($comments, function(\stdClass &$comment)
+			{
+				$comment->email = md5(strtolower($comment->email));
+			});
+		} catch (\Throwable $e) {
+			trigger_error($e->getMessage());
+		} finally {
+			return $comments ?? [];
 		}
 	}
 
@@ -91,6 +137,7 @@ final class Article extends Abstracts\Content
 		return 'SELECT `posts`.`id`,
 			`categories`.`name` AS `category`,
 			`categories`.`url-name` AS `catURL`,
+			`categories`.`id` AS `catID`,
 			`posts`.`title`,
 			`posts`.`author`,
 			`posts`.`content`,
