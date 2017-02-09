@@ -30,11 +30,17 @@ final class Comments extends \SplObjectStorage implements \JsonSerializable
 		return $items;
 	}
 
-	public static function getComments(\PDO $pdo, Int $post_id, Int $cat_id): self
+	public static function getComments(
+		\PDO $pdo,
+		Int  $post_id,
+		Int  $cat_id,
+		Int  $start = 0,
+		Int  $end   = PHP_INT_MAX
+	): self
 	{
 		try {
 			$stm = $pdo->prepare(
-				'SELECT
+				"SELECT
 				`post_comments`.`created`,
 				`post_comments`.`text`,
 				`post_comments`.`id` AS `commentID`,
@@ -43,13 +49,14 @@ final class Comments extends \SplObjectStorage implements \JsonSerializable
 				`users`.`email`
 				FROM `post_comments`
 				JOIN `posts` ON `posts`.`id` = `post_comments`.`postID`
-				AND `posts`.`cat-id` = `post_comments`.`catID`
+					AND `posts`.`cat-id` = `post_comments`.`catID`
 				JOIN `users` ON `users`.`id` = `post_comments`.`userID`
 				JOIN `user_data` ON `user_data`.`id` = `post_comments`.`userID`
 				WHERE `posts`.`id` = :post
-				AND `posts`.`cat-id` = :cat
-				AND `post_comments`.`approved` = 1
-				ORDER BY `post_comments`.`created` DESC;'
+					AND `posts`.`cat-id` = :cat
+					AND `post_comments`.`approved` = 1
+				ORDER BY `post_comments`.`created` DESC
+				LIMIT $start, $end;"
 			);
 			$stm->bindParam(':post', $post_id);
 			$stm->bindParam(':cat', $cat_id);
