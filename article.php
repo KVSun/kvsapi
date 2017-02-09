@@ -108,7 +108,8 @@ final class Article extends Abstracts\Content
 			JOIN `user_data` ON `user_data`.`id` = `post_comments`.`userID`
 			WHERE `posts`.`id` = :post
 			AND `posts`.`cat-id` = :cat
-			AND `post_comments`.`approved` = 1;'
+			AND `post_comments`.`approved` = 1
+			ORDER BY `post_comments`.`created` DESC;'
 		);
 		$stm->bindParam(':post', $post_id);
 		$stm->bindParam(':cat', $cat_id);
