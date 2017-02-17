@@ -79,7 +79,7 @@ final class Article extends Abstracts\Content
 				$this->_set('posted_by', $results->posted_by);
 				$this->_set('keywords', $keywords);
 				$this->_set('description', $results->description);
-				$this->_set('is_free', $results->is_free ?? true);
+				$this->_set('is_free', $results->isFree === '1' ?? true);
 				$this->_set('comments', Comments::getComments($this->_pdo, $this->id, $cat->id));
 			}
 		}
@@ -101,6 +101,7 @@ final class Article extends Abstracts\Content
 			`posts`.`posted`,
 			`posts`.`updated`,
 			`posts`.`draft`,
+			`posts`.`isFree`,
 			`posts`.`url`,
 			`posts`.`img`,
 			`user_data`.`name` AS `posted_by`,
