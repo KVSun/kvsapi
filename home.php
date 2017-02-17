@@ -82,9 +82,18 @@ final class Home extends Abstracts\Content
 		$this->_set('categories', $cats);
 	}
 
+	/**
+	 * Maps data from table to more complex objects
+	 * @param  stdClass  $sections Class containing all sections
+	 * @param  StdClass  $post     Individual post containing full data from table
+	 * @return stdClass            $sections with $post data appended, possibly creating a new section
+	 */
 	private function _reduceSections(\stdClass $sections, \StdClass $post): \stdClass
 	{
 		$sec_name = $post->category;
+
+		// If section is not an object in $sections, create the object
+		// and give it properties that belong on sections/categories
 		if (! isset($sections->{$sec_name})) {
 			$sections->{$sec_name} = new \stdClass();
 			$sections->{$sec_name}->posts = [];
@@ -92,6 +101,9 @@ final class Home extends Abstracts\Content
 			$sections->{$sec_name}->catURL = $post->catURL;
 			$sections->{$sec_name}->parent = $post->parent;
 		}
+
+		// Section will exist in $sections now, so add individual post data
+		// to the array, of posts for the section
 		$sections->{$sec_name}->posts[] = (object)[
 			'title'         => $post->title,
 			'author'        => $post->author,
@@ -107,8 +119,15 @@ final class Home extends Abstracts\Content
 		return $sections;
 	}
 
+	/**
+	 * Converts keywords from string to array (trimmed)
+	 * @param  String $keywords "keywords 1, keyword2, ..."
+	 * @return Array            ["keywords 1", "keyword2", ...]
+	 */
 	protected function _getKeywords(String $keywords): Array
 	{
-		return empty($keywords)? [] : array_map('trim', array_filter(explode(',', $keywords)));
+		return empty($keywords)
+			? []
+			: array_map('trim', array_filter(explode(',', $keywords)));
 	}
 }
