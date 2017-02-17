@@ -49,6 +49,10 @@ final class Home extends Abstracts\Content
 			`posts`.`img`,
 			`posts`.`url`,
 			`posts`.`posted`,
+			`posts`.`isFree`,
+			`posts`.`keywords`,
+			`posts`.`description`,
+			`posts`.`draft`,
 			`categories`.`url-name` AS `catURL`,
 			`categories`.`icon`,
 			`categories`.`parent`,
@@ -66,14 +70,45 @@ final class Home extends Abstracts\Content
 	 */
 	protected function _setData(\PDOStatement $stm)
 	{
-		$categories = new \stdClass();
+		$cats = new \stdClass();
 
 		foreach ($this->_categories as $cat) {
 			$stm->bindParam(':cat', $cat);
 			$stm->execute();
-			$categories->{$cat} = $stm->fetchAll(\PDO::FETCH_CLASS) ?? [];
+			$results = $stm->fetchAll(\PDO::FETCH_CLASS) ?? [];
+			array_reduce($results, [$this, '_reduceSections'], $cats);
 		}
 
-		$this->_set('sections', $categories);
+		$this->_set('categories', $cats);
+	}
+
+	private function _reduceSections(\stdClass $sections, \StdClass $post): \stdClass
+	{
+		$sec_name = $post->category;
+		if (! isset($sections->{$sec_name})) {
+			$sections->{$sec_name} = new \stdClass();
+			$sections->{$sec_name}->posts = [];
+			$sections->{$sec_name}->icon = $post->icon;
+			$sections->{$sec_name}->catURL = $post->catURL;
+			$sections->{$sec_name}->parent = $post->parent;
+		}
+		$sections->{$sec_name}->posts[] = (object)[
+			'title'         => $post->title,
+			'author'        => $post->author,
+			'description'   => $post->description,
+			'keywords'      => $this->_getKeywords($post->keywords ?? ''),
+			'img'           => $post->img,
+			'url'           => "{$post->catURL}/{$post->url}",
+			'posted'        => $post->posted,
+			'isFree'        => $post->isFree === '1',
+			'isDraft'       => $post->draft === '1',
+		];
+
+		return $sections;
+	}
+
+	protected function _getKeywords(String $keywords): Array
+	{
+		return empty($keywords)? [] : array_map('trim', array_filter(explode(',', $keywords)));
 	}
 }
