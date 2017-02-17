@@ -63,6 +63,7 @@ final class Category extends Abstracts\Content
 			`posts`.`posted`,
 			`categories`.`url-name` AS `catURL`,
 			`categories`.`name`,
+			`categories`.`icon`,
 			`categories`.`parent`
 		FROM `posts`
 		JOIN `categories` ON `categories`.`id` = `posts`.`cat-id`
@@ -83,8 +84,22 @@ final class Category extends Abstracts\Content
 		$stm->execute();
 		$results = $stm->fetchAll(\PDO::FETCH_CLASS);
 
+		$this->_set('icon', $results[0]->icon ?? null);
 		$this->_set('category', $cat_url ?? null);
-		$this->_set('articles', $results ?? []);
 		$this->_set('title', $results[0]->name ?? 'Category not found');
+		array_walk($results, [$this, '_clearRedundant']);
+
+		$this->_set('articles', $results ?? []);
+	}
+
+	/**
+	 * Removes any redundant info that belongs on the category rather than the articles
+	 * @param  stdClass $article Object containing all data from tables
+	 * @return void
+	 */
+	private function _clearRedundant(\stdClass &$article)
+	{
+		$article->url = "{$article->catURL}/{$article->url}";
+		unset($article->catURL, $article->name, $article->icon, $article->parent);
 	}
 }

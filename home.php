@@ -50,6 +50,7 @@ final class Home extends Abstracts\Content
 			`posts`.`url`,
 			`posts`.`posted`,
 			`categories`.`url-name` AS `catURL`,
+			`categories`.`icon`,
 			`categories`.`parent`,
 			`categories`.`name` as `category`
 		FROM `posts`
