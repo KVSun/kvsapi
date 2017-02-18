@@ -15,7 +15,7 @@ final class Home extends Abstracts\Content
 	 * @var Array
 	 */
 	const DEFAULTS = [
-		'sections' => [],
+		'categories' => null,
 	];
 
 	/**
