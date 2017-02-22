@@ -94,7 +94,6 @@ final class Comments extends \SplObjectStorage implements \JsonSerializable
 				throw new \Exception('SQL Error: '. join(PHP_EOL, $stm->errorInfo()));
 			}
 			$comments = $stm->fetchAll(\PDO::FETCH_CLASS);
-			\shgysk8zer0\Core\Console::log($comments);
 			if ($filter_approved) {
 				$comments = array_filter($comments, __CLASS__ . '::_isApproved');
 			}
