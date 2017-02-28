@@ -49,7 +49,8 @@ trait Images
 					:height,
 					:format,
 					:size
-				);'
+				) ON DUPLICATE KEY UPDATE
+					`filesize` = COALESCE(:size, `filesize`);'
 			);
 		}
 		try {
@@ -91,6 +92,9 @@ trait Images
 					`contentSize`,
 					`height`,
 					`width`,
+					`creator`,
+					`caption`,
+					`alt`,
 					`uploadedBy`
 				) VALUES (
 					:path,
@@ -98,16 +102,25 @@ trait Images
 					:size,
 					:height,
 					:width,
+					:creator,
+					:caption,
+					:alt,
 					:userId
-				);'
+				) ON DUPLICATE KEY UPDATE
+					`creator` = COALESCE(:creator, `creator`),
+					`caption` = COALESCE(:caption, `caption`),
+					`alt`     = COALESCE(:alt,     `alt`);'
 			);
 			static::$_add_img_stm->execute([
-				'path' => $img['path'],
-				'format' => $img['type'],
-				'size' => $img['size'],
-				'height' => $img['height'],
-				'width' => $img['width'],
-				'userId' => $user->id,
+				'path'    => $img['path'],
+				'format'  => $img['type'],
+				'size'    => $img['size'],
+				'height'  => $img['height'],
+				'width'   => $img['width'],
+				'creator' => $img['creator'] ?? null,
+				'caption' => $img['caption'] ?? null,
+				'alt'     => $img['alt']     ?? null,
+				'userId'  => $user->id,
 			]);
 			if (intval(static::$_add_img_stm->errorCode()) !== 0) {
 				throw new \RuntimeException(
