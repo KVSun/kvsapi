@@ -110,7 +110,7 @@ final class Article extends Abstracts\Content
 		foreach ($dom->documentElement->getElementsByTagName('figure') as $figure) {
 			if ($figure->hasAttribute('data-image-id')) {
 				try {
-					$new_fig = $this->_createFigure(
+					$new_fig = $this->_getFigure(
 						$figure->getAttribute('data-image-id'),
 						$figure->parentNode
 					);
@@ -122,7 +122,7 @@ final class Article extends Abstracts\Content
 		}
 		foreach ($dom->documentElement->getElementsByTagName('img') as $img) {
 			if ($img->hasAttribute('data-image-id')) {
-				$figure = $this->_createFigure(
+				$figure = $this->_getFigure(
 					$img->getAttribute('data-image-id'),
 					$img->parentNode
 				);

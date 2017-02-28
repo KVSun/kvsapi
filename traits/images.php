@@ -72,6 +72,11 @@ trait Images
 		}
 	}
 
+	/**
+	 * Validates that an image object has all required properties
+	 * @param  stdClass $image Image object, such as from `images` table
+	 * @return Bool            Whether or not all required attributes are set
+	 */
 	final protected static function _validImage(\stdClass $image): Bool
 	{
 		$valid = true;
@@ -84,6 +89,11 @@ trait Images
 		return $valid;
 	}
 
+	/**
+	 * Validate that a srcset object has all required properties
+	 * @param  stdClass $srcset srcset object, such as from `srcset` table
+	 * @return Bool             Whether or not all required attributes are set
+	 */
 	final protected static function _validSrcset(\stdClass $srcset): Bool
 	{
 		$valid = true;
@@ -101,19 +111,14 @@ trait Images
 	 * @param DOMElement $parent The element to append `<picture>` to
 	 * @param Int        $img_id `images`.`id`
 	 */
-	final protected function _addPicture(\DOMElement $parent, Int $img_id): \DOMElement
+	final protected function _getPicture(\DOMElement $parent, \stdClass $image): \DOMElement
 	{
-		if ($parent->tagName !== 'figure') {
-			throw new \InvalidArgumentException("Expected a <figure> but got a <{$parent->tagName}>");
+		if (! (static::_validImage($image) and isset($image->id))) {
+			throw new \InvalidArgumentException('Cannot create an image without required attributes');
 		}
 		$dom = $parent->ownerDocument;
 		$picture = $parent->appendChild($dom->createElement('picture'));
-		$sources = $this->_getSources($img_id);
-		$image = $this->_getImage($img_id);
-		if (!static::_validImage($image)) {
-			throw new \RuntimeException('Image did not have all required properties');
-		}
-		$this->_addSources($picture, $sources);
+		$this->_addSources($picture,  $this->_getSources($image->id));
 		$img = $picture->appendChild($dom->createElement('img'));
 		$img->setAttribute('src', $image->path);
 		$img->setAttribute('width', $image->width);
@@ -136,8 +141,46 @@ trait Images
 		$meta->setAttribute('itemprop', 'uploadDate');
 		$meta->setAttribute('content', $image->uploadDate);
 
+		return $parent;
+	}
+
+	/**
+	 * Sort an array of `srcsets` (from `srcset` table) from smallest to largest width
+	 * @param  stdClass $src1 A `srcset` object
+	 * @param  stdClass $src2 Another `srcset` object
+	 * @return Int            -1 if smaller, 0 if equal, 1 if greater
+	 */
+	final protected function _sortSources(\stdClass $src1, \stdClass $src2): Int
+	{
+		return $src1->width <=> $src2->width;
+	}
+
+	/**
+	 * Creates a `<figure>` and `<picture>` element with `<figcaption>` if
+	 * creator or caption are set
+	 * @param  Int         $img_id Image ID from `posts.img`
+	 * @param  DOMElement  $parent Element to appdend it to
+	 * @return DOMElement         Newly created `<figure>`
+	 */
+	final protected function _getFigure(Int $img_id, \DOMElement $parent): \DOMElement
+	{
+		if (is_null($parent)) {
+			$dom = new \DOMDocument('1.0', 'UTF-8');
+			$dom->appendChild($dom->createElement('html'));
+			$parent = $dom->documentElement->appendChild($dom->createElement('body'));
+		} else {
+			$dom = $parent->ownerDocument;
+		}
+		$figure = $parent->appendChild($parent->ownerDocument->createElement('figure'));
+		$figure->setAttribute('data-image-id', $img_id);
+		$figure->setAttribute('itemprop', 'image');
+		$figure->setAttribute('itemtype', 'http://schema.org/ImageObject');
+		$figure->setAttribute('itemscope', null);
+		$image = $this->_getImage($img_id);
+		$image->id = $img_id;
+		$this->_getPicture($figure, $image);
 		if (isset($image->caption) or isset($image->creator)) {
-			$caption = $parent->appendChild($dom->createElement('figcaption'));
+			$caption = $figure->appendChild($dom->createElement('figcaption'));
 			if (isset($image->creator)) {
 				$cite = $caption->appendChild($dom->createElement('cite', "Photo by&nbsp;"));
 				$cite->setAttribute('itemprop', 'creator');
@@ -152,27 +195,7 @@ trait Images
 				$cap->setAttribute('itemprop', 'caption');
 			}
 		}
-		return $parent;
-	}
-
-	final protected function _sortSources(\stdClass $src1, \stdClass $src2): Int
-	{
-		return $src1->width <=> $src2->width;
-	}
-
-	final protected function _createFigure(Int $img_id, \DOMElement $parent): \DOMElement
-	{
-		if (is_null($parent)) {
-			$dom = new \DOMDocument('1.0', 'UTF-8');
-			$dom->appendChild($dom->createElement('html'));
-			$parent = $dom->documentElement->appendChild($dom->createElement('body'));
-		}
-		$figure = $parent->appendChild($parent->ownerDocument->createElement('figure'));
-		$figure->setAttribute('data-image-id', $img_id);
-		$figure->setAttribute('itemprop', 'image');
-		$figure->setAttribute('itemtype', 'http://schema.org/ImageObject');
-		$figure->setAttribute('itemscope', null);
-		return $this->_addPicture($figure, $img_id);
+		return $figure;
 	}
 
 	/**
