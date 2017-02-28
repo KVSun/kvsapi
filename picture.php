@@ -15,7 +15,7 @@ final class Picture
 
 	public function getFigure(Int $id, \DOMElement $parent = null): \DOMElement
 	{
-		return $this->_createFigure($id, $parent);
+		return $this->_getFigure($id, $parent);
 	}
 
 	public function getFigureHTML(Int $id): String
@@ -24,9 +24,17 @@ final class Picture
 		return $figure->ownerDocument->saveHTML($figure);
 	}
 
-	public function getPicture(Int $id, \DOMElement $parent = null): \DOMElement
+	public function getPicture(Int $img_id, \DOMElement $parent = null): \DOMElement
 	{
-		//
+		$img = $this->_getImage($img_id);
+		$img->id = $img_id;
+		return $this->_getPicture($parent, $img);
+	}
+
+	public function getPictureHTML(Int $id): String
+	{
+		$picture = $this->getPicture($id);
+		return $picture->ownerDocument->saveHTML($picture);
 	}
 
 	public function __invoke(Int $id, \DOMElement $parent = null): \DOMElement
