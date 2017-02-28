@@ -119,7 +119,7 @@ final class Home extends Abstracts\Content
 			'posted'        => $post->posted,
 			'isFree'        => $post->isFree === '1',
 			'isDraft'       => $post->draft === '1',
-			'image'         => $this->_getImage($post->img),
+			'image'         => $this->_getImage(intval($post->img)),
 		];
 
 		return $sections;

@@ -104,7 +104,7 @@ final class Category extends Abstracts\Content
 	 */
 	private function _updateData(stdClass &$article)
 	{
-		$article->image = $this->_getImage($article->img);
+		$article->image = $this->_getImage(intval($article->img));
 		$article->url = "{$article->catURL}/{$article->url}";
 		unset($article->catURL, $article->name, $article->icon, $article->parent);
 	}

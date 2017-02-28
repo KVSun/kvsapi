@@ -85,7 +85,7 @@ final class Article extends Abstracts\Content
 				$this->_set('draft', $results->draft === '1');
 				$this->_set('url', $results->url);
 				$this->_set('img', $results->img);
-				$this->_set('image', $this->_getImage($results->img));
+				$this->_set('image', $this->_getImage(intval($results->img)));
 				$this->_set('posted_by', $results->posted_by);
 				$this->_set('keywords', $keywords);
 				$this->_set('description', $results->description);
