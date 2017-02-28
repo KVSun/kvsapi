@@ -1,10 +1,13 @@
 <?php
 namespace KVSun\KVSAPI\Traits;
 use \shgysk8zer0\Core\{PDO};
+use \shgysk8zer0\Login\{User};
 trait Images
 {
 	private static $_img_stm;
 	private static $_source_stm;
+	private static $_add_img_stm;
+	private static $_add_source_stm;
 	private static $_srcset_props = [
 		'path',
 		'width',
@@ -21,6 +24,100 @@ trait Images
 		'height',
 		'width',
 	];
+
+	/**
+	 * Add images to `srcset` table
+	 * @param  Array $sources   Array of image sources to add
+	 * @param  Int   $parent_id Parent ID (PDO::lastInsertId())
+	 * @return Bool             Whether or not all image sources were added
+	 */
+	public function addSources(Array $sources, Int $parent_id): Bool
+	{
+		if (is_null(static::$_add_source_stm)) {
+			static::$_add_source_stm = $this->_pdo->prepare(
+				'INSERT INTO `srcset` (
+					`parentID`,
+					`path`,
+					`width`,
+					`height`,
+					`format`,
+					`filesize`
+				) VALUES (
+					:parent,
+					:path,
+					:width,
+					:height,
+					:format,
+					:size
+				);'
+			);
+		}
+		try {
+			foreach ($sources as $source) {
+				static::$_add_source_stm->execute([
+					'parent' => $parent_id,
+					'path'   => $source['path'],
+					'width'  => $source['width'],
+					'height' => $source['height'],
+					'format' => $source['type'],
+					'size'   => $source['size'],
+				]);
+				if (intval(static::$_add_source_stm->errorCode()) !== 0) {
+					throw new \RuntimeException(
+						'SQL Error: '. join(PHP_EOL, static::$_add_source_stm->errorInfo())
+					);
+				}
+			}
+			return true;
+		} catch (\Throwable $e) {
+			trigger_error($e->getMessage());
+			return false;
+		}
+	}
+
+	/**
+	 * Adds an image to `images` table and returns its ID
+	 * @param  Array $img  Array of image data
+	 * @param  User  $user User object for user uploading image
+	 * @return Int         ID of newly inserted image
+	 */
+	final public function addImage(Array $img, User $user): Int
+	{
+		if (is_null(static::$_add_img_stm)) {
+			static::$_add_img_stm = $this->_pdo->prepare(
+				'INSERT INTO `images` (
+					`path`,
+					`fileFormat`,
+					`contentSize`,
+					`height`,
+					`width`,
+					`uploadedBy`
+				) VALUES (
+					:path,
+					:format,
+					:size,
+					:height,
+					:width,
+					:userId
+				);'
+			);
+			static::$_add_img_stm->execute([
+				'path' => $img['path'],
+				'format' => $img['type'],
+				'size' => $img['size'],
+				'height' => $img['height'],
+				'width' => $img['width'],
+				'userId' => $user->id,
+			]);
+			if (intval(static::$_add_img_stm->errorCode()) !== 0) {
+				throw new \RuntimeException(
+					'SQL Error: '. join(PHP_EOL, static::$_add_img_stm->errorInfo())
+				);
+			} else {
+				return $this->_pdo->lastInsertId();
+			}
+		}
+	}
 
 	/**
 	 * Get an image for post by its ID
@@ -46,6 +143,28 @@ trait Images
 		} else {
 			return new \StdClass();
 		}
+	}
+
+	/**
+	 * Get the largest image of a set Mime-type from an array, such as from `$_FILES`
+	 * @param  Array  $imgs Array of images
+	 * @param  string $mime Mime-type of image to find the largest of
+	 * @return Array       Image data for largest image
+	 */
+	final public function largestImage(Array $imgs, String $mime = 'image/jpeg'): Array
+	{
+		return array_reduce($imgs, function(Array $largest, Array $img) use($mime): Array
+		{
+			if (
+				array_key_exists('type', $img)
+				and array_key_exists('width', $img)
+				and $img['type'] === $mime
+				and $img['width'] > $largest['width']
+			) {
+				$largest = $img;
+			}
+			return $largest;
+		}, ['width' => 0]);
 	}
 
 	/**
@@ -108,8 +227,9 @@ trait Images
 
 	/**
 	 * Appends a `<picture>` (responsive image) with microdata to an element
-	 * @param DOMElement $parent The element to append `<picture>` to
-	 * @param Int        $img_id `images`.`id`
+	 * @param DOMElement  $parent The element to append `<picture>` to
+	 * @param Int         $img_id `images`.`id`
+	 * @return DOMElement The `<picture>`
 	 */
 	final protected function _getPicture(\DOMElement $parent, \stdClass $image): \DOMElement
 	{
@@ -141,7 +261,7 @@ trait Images
 		$meta->setAttribute('itemprop', 'uploadDate');
 		$meta->setAttribute('content', $image->uploadDate);
 
-		return $parent;
+		return $picture;
 	}
 
 	/**
@@ -162,7 +282,7 @@ trait Images
 	 * @param  DOMElement  $parent Element to appdend it to
 	 * @return DOMElement         Newly created `<figure>`
 	 */
-	final protected function _getFigure(Int $img_id, \DOMElement $parent): \DOMElement
+	final protected function _getFigure(Int $img_id, \DOMElement $parent = null): \DOMElement
 	{
 		if (is_null($parent)) {
 			$dom = new \DOMDocument('1.0', 'UTF-8');
