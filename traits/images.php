@@ -8,6 +8,8 @@ trait Images
 	private static $_source_stm;
 	private static $_add_img_stm;
 	private static $_add_source_stm;
+	private static $_img_id_stm;
+
 	private static $_srcset_props = [
 		'path',
 		'width',
@@ -33,6 +35,10 @@ trait Images
 	 */
 	public function addSources(Array $sources, Int $parent_id): Bool
 	{
+		// LAST_INSERT_ID returns 0 on update, so we can skip this
+		if ($parent_id === 0) {
+			return true;
+		}
 		if (is_null(static::$_add_source_stm)) {
 			static::$_add_source_stm = $this->_pdo->prepare(
 				'INSERT INTO `srcset` (
@@ -127,9 +133,26 @@ trait Images
 					'SQL Error: '. join(PHP_EOL, static::$_add_img_stm->errorInfo())
 				);
 			} else {
-				return $this->_pdo->lastInsertId();
+				return $this->_pdo->lastInsertId ?? $this->getImageId($img['path']);
 			}
 		}
+	}
+
+	/**
+	 * Get an image's ID from its path
+	 * @param  String $path "/path/to/image"
+	 * @return Int          Image ID or 0 if not found
+	 */
+	final public function getImageId(String $path): Int
+	{
+		if (is_null(static::$_img_id_stm)) {
+			static::$_img_id_stm = $this->_pdo->prepare(
+				'SELECT `id` FROM `images` WHERE `path` = :path LIMIT 1;'
+			);
+		}
+		static::$_img_id_stm->execute(['path' => $path]);
+		$img = static::$_img_id_stm->fetchObject() ?? new \stdClass();
+		return $img->id ?? 0;
 	}
 
 	/**
@@ -214,6 +237,7 @@ trait Images
 		$valid = true;
 		foreach (static::$_img_props as $prop) {
 			if (! isset($image->{$prop})) {
+				trigger_error("Missing {$prop} attribute");
 				$valid = false;
 				break;
 			}
@@ -231,6 +255,7 @@ trait Images
 		$valid = true;
 		foreach (static::$_srcset_props as $prop) {
 			if (! isset($srcset->{$prop})) {
+				trigger_error("Missing {$prop} attribute");
 				$valid = false;
 				break;
 			}
