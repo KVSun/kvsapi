@@ -110,14 +110,11 @@ final class Article extends Abstracts\Content
 		foreach ($dom->documentElement->getElementsByTagName('figure') as $figure) {
 			if ($figure->hasAttribute('data-image-id')) {
 				try {
-					$figure->setAttribute('itemprop', 'image');
-					$figure->setAttribute('itemtype', 'http://schema.org/ImageObject');
-					$figure->setAttribute('itemscope', null);
-					while ($figure->hasChildNodes() and $node = $figure->firstChild) {
-						$figure->removeChild($node);
-					}
-
-					$this->_addPicture($figure, $figure->getAttribute('data-image-id'));
+					$new_fig = $this->_createFigure(
+						$figure->getAttribute('data-image-id'),
+						$figure->parentNode
+					);
+					$figure->parentNode->replaceChild($new_fig, $figure);
 				} catch (\Throwable $e) {
 					trigger_error($e->getMessage());
 				}
@@ -125,13 +122,11 @@ final class Article extends Abstracts\Content
 		}
 		foreach ($dom->documentElement->getElementsByTagName('img') as $img) {
 			if ($img->hasAttribute('data-image-id')) {
-				$id = $img->getAttribute('data-image-id');
-				$figure = $dom->createElement('figure');
+				$figure = $this->_createFigure(
+					$img->getAttribute('data-image-id'),
+					$img->parentNode
+				);
 				$img->parentNode->replaceChild($figure, $img);
-				$figure->setAttribute('itemprop', 'image');
-				$figure->setAttribute('itemtype', 'http://schema.org/ImageObject');
-				$figure->setAttribute('itemscope', null);
-				$this->_addPicture($figure, $id);
 			}
 		}
 		return $dom->saveHTML($dom->documentElement->firstChild);

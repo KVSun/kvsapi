@@ -5,6 +5,22 @@ trait Images
 {
 	private static $_img_stm;
 	private static $_source_stm;
+	private static $_srcset_props = [
+		'path',
+		'width',
+		'height',
+		'format',
+		'fileSize',
+	];
+
+	private static $_img_props = [
+		'path',
+		'fileFormat',
+		'contentSize',
+		'uploadDate',
+		'height',
+		'width',
+	];
 
 	/**
 	 * Get an image for post by its ID
@@ -56,17 +72,47 @@ trait Images
 		}
 	}
 
+	final protected static function _validImage(\stdClass $image): Bool
+	{
+		$valid = true;
+		foreach (static::$_img_props as $prop) {
+			if (! isset($image->{$prop})) {
+				$valid = false;
+				break;
+			}
+		}
+		return $valid;
+	}
+
+	final protected static function _validSrcset(\stdClass $srcset): Bool
+	{
+		$valid = true;
+		foreach (static::$_srcset_props as $prop) {
+			if (! isset($srcset->{$prop})) {
+				$valid = false;
+				break;
+			}
+		}
+		return $valid;
+	}
+
 	/**
 	 * Appends a `<picture>` (responsive image) with microdata to an element
 	 * @param DOMElement $parent The element to append `<picture>` to
 	 * @param Int        $img_id `images`.`id`
 	 */
-	final protected function _addPicture(\DOMElement $parent, Int $img_id)
+	final protected function _addPicture(\DOMElement $parent, Int $img_id): \DOMElement
 	{
+		if ($parent->tagName !== 'figure') {
+			throw new \InvalidArgumentException("Expected a <figure> but got a <{$parent->tagName}>");
+		}
 		$dom = $parent->ownerDocument;
 		$picture = $parent->appendChild($dom->createElement('picture'));
 		$sources = $this->_getSources($img_id);
 		$image = $this->_getImage($img_id);
+		if (!static::_validImage($image)) {
+			throw new \RuntimeException('Image did not have all required properties');
+		}
 		$this->_addSources($picture, $sources);
 		$img = $picture->appendChild($dom->createElement('img'));
 		$img->setAttribute('src', $image->path);
@@ -83,6 +129,13 @@ trait Images
 		$meta = $parent->appendChild($dom->createElement('meta'));
 		$meta->setAttribute('itemprop', 'fileFormat');
 		$meta->setAttribute('content', $image->fileFormat);
+		$meta = $parent->appendChild($dom->createElement('meta'));
+		$meta->setAttribute('itemprop', 'contentSize');
+		$meta->setAttribute('content', round($image->contentSize / 1024, 1) . ' kB');
+		$meta = $parent->appendChild($dom->createElement('meta'));
+		$meta->setAttribute('itemprop', 'uploadDate');
+		$meta->setAttribute('content', $image->uploadDate);
+
 		if (isset($image->caption) or isset($image->creator)) {
 			$caption = $parent->appendChild($dom->createElement('figcaption'));
 			if (isset($image->creator)) {
@@ -99,6 +152,27 @@ trait Images
 				$cap->setAttribute('itemprop', 'caption');
 			}
 		}
+		return $parent;
+	}
+
+	final protected function _sortSources(\stdClass $src1, \stdClass $src2): Int
+	{
+		return $src1->width <=> $src2->width;
+	}
+
+	final protected function _createFigure(Int $img_id, \DOMElement $parent): \DOMElement
+	{
+		if (is_null($parent)) {
+			$dom = new \DOMDocument('1.0', 'UTF-8');
+			$dom->appendChild($dom->createElement('html'));
+			$parent = $dom->documentElement->appendChild($dom->createElement('body'));
+		}
+		$figure = $parent->appendChild($parent->ownerDocument->createElement('figure'));
+		$figure->setAttribute('data-image-id', $img_id);
+		$figure->setAttribute('itemprop', 'image');
+		$figure->setAttribute('itemtype', 'http://schema.org/ImageObject');
+		$figure->setAttribute('itemscope', null);
+		return $this->_addPicture($figure, $img_id);
 	}
 
 	/**
@@ -111,9 +185,7 @@ trait Images
 		if ($parent->tagName !== 'picture') {
 			throw new \InvalidArgumentException("Expected a <picture> but got a <{$parent->tagName}>");
 		}
-		usort($sources, function(\stdClass $src1, \stdClass $src2): Int{
-			return $src1->width <=> $src2->width;
-		});
+		usort($sources, [$this, '_sortSources']);
 		$srcset = [];
 		$srcs = [];
 		foreach ($sources as $src) {
