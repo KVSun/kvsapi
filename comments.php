@@ -2,13 +2,17 @@
 
 namespace KVSun\KVSAPI;
 
+use \shgysk8zer0\Core\{PDO};
+use \PDOStatement;
+use \stdClass;
+
 final class Comments extends \SplObjectStorage implements \JsonSerializable
 {
 	/**
 	 * Create a Comments instance from a list of comments
 	 * @param stdClass $comments $comment1, $comment2, ...
 	 */
-	public function __construct(\stdClass ...$comments)
+	public function __construct(stdClass ...$comments)
 	{
 		foreach ($comments as $comment) {
 			$this->attach(new Comment($comment));
@@ -58,7 +62,7 @@ final class Comments extends \SplObjectStorage implements \JsonSerializable
 	 * @return self                     A new instance of Comments filled with comments on post
 	 */
 	public static function getComments(
-		\PDO $pdo,
+		PDO  $pdo,
 		Int  $post_id,
 		Int  $cat_id,
 		Bool $filter_approved = true,
@@ -93,7 +97,7 @@ final class Comments extends \SplObjectStorage implements \JsonSerializable
 			if (intval($stm->errorCode()) !== 0) {
 				throw new \Exception('SQL Error: '. join(PHP_EOL, $stm->errorInfo()));
 			}
-			$comments = $stm->fetchAll(\PDO::FETCH_CLASS);
+			$comments = $stm->fetchAll(PDO::FETCH_CLASS);
 			if ($filter_approved) {
 				$comments = array_filter($comments, __CLASS__ . '::_isApproved');
 			}
@@ -109,7 +113,7 @@ final class Comments extends \SplObjectStorage implements \JsonSerializable
 	 * @param  StdClass $comment Comment data
 	 * @return Bool              Whether or not the comment has been approved
 	 */
-	private static function _isApproved(\StdClass $comment): Bool
+	private static function _isApproved(StdClass $comment): Bool
 	{
 		return isset($comment->approved) and $comment->approved == 1;
 	}

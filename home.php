@@ -2,8 +2,13 @@
 
 namespace KVSun\KVSAPI;
 
+use \shgysk8zer0\Core\{PDO};
+use \PDOStatement;
+use \stdClass;
+
 final class Home extends Abstracts\Content
 {
+	use Traits\Images;
 	/**
 	 * Type of content
 	 * @var string
@@ -26,7 +31,7 @@ final class Home extends Abstracts\Content
 	 * @param integer $count      Max number of results
 	 */
 	public function __construct(
-		\PDO    $pdo,
+		PDO    $pdo,
 		String  $url        = null,
 		Array   $categories,
 		Int     $count      = 12
@@ -34,7 +39,7 @@ final class Home extends Abstracts\Content
 	{
 		$this->_categories = $categories;
 		$this->_count = $count;
-		parent::__construct($pdo, $url);
+		$this->_init($pdo, $url);
 	}
 
 	/**
@@ -56,7 +61,7 @@ final class Home extends Abstracts\Content
 			`categories`.`url-name` AS `catURL`,
 			`categories`.`icon`,
 			`categories`.`parent`,
-			`categories`.`name` as `category`
+			`categories`.`name` AS `category`
 		FROM `posts`
 		JOIN `categories` ON `categories`.`id` = `posts`.`cat-id`
 		WHERE `categories`.`url-name` = :cat
@@ -68,14 +73,14 @@ final class Home extends Abstracts\Content
 	 * Required method for setting data
 	 * @param PDOStatement $stm A prepared statment using `\PDO::prepare`
 	 */
-	protected function _setData(\PDOStatement $stm)
+	protected function _setData(PDOStatement $stm)
 	{
-		$cats = new \stdClass();
+		$cats = new stdClass();
 
 		foreach ($this->_categories as $cat) {
 			$stm->bindParam(':cat', $cat);
 			$stm->execute();
-			$results = $stm->fetchAll(\PDO::FETCH_CLASS) ?? [];
+			$results = $stm->fetchAll(PDO::FETCH_CLASS) ?? [];
 			array_reduce($results, [$this, '_reduceSections'], $cats);
 		}
 
@@ -88,14 +93,14 @@ final class Home extends Abstracts\Content
 	 * @param  StdClass  $post     Individual post containing full data from table
 	 * @return stdClass            $sections with $post data appended, possibly creating a new section
 	 */
-	private function _reduceSections(\stdClass $sections, \StdClass $post): \stdClass
+	private function _reduceSections(stdClass $sections, StdClass $post): stdClass
 	{
 		$sec_name = $post->category;
 
 		// If section is not an object in $sections, create the object
 		// and give it properties that belong on sections/categories
 		if (! isset($sections->{$sec_name})) {
-			$sections->{$sec_name} = new \stdClass();
+			$sections->{$sec_name} = new stdClass();
 			$sections->{$sec_name}->posts = [];
 			$sections->{$sec_name}->icon = $post->icon;
 			$sections->{$sec_name}->catURL = $post->catURL;
@@ -114,6 +119,7 @@ final class Home extends Abstracts\Content
 			'posted'        => $post->posted,
 			'isFree'        => $post->isFree === '1',
 			'isDraft'       => $post->draft === '1',
+			'image'         => $this->_getImage($post->img),
 		];
 
 		return $sections;

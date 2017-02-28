@@ -1,8 +1,17 @@
 <?php
 namespace KVSun\KVSAPI;
+use \shgysk8zer0\Core\{PDO};
+use \PDOStatement;
+use \stdClass;
 
 final class Article extends Abstracts\Content
 {
+	use Traits\Images;
+	public function __construct(PDO $pdo, String $url = null)
+	{
+		$this->_init($pdo, $url);
+	}
+
 	/**
 	 * Type of content
 	 * @var string
@@ -35,7 +44,7 @@ final class Article extends Abstracts\Content
 	 * Required method for setting data
 	 * @param PDOStatement $stm A prepared statment using `\PDO::prepare`
 	 */
-	protected function _setData(\PDOStatement $stm)
+	protected function _setData(PDOStatement $stm)
 	{
 		$path = $this->_parsePath();
 
@@ -61,7 +70,7 @@ final class Article extends Abstracts\Content
 					$keywords = [];
 				}
 
-				$cat = new \stdClass();
+				$cat = new stdClass();
 				$cat->name = $results->category;
 				$cat->url = $results->catURL;
 				$cat->id = intval($results->catID);
@@ -76,6 +85,7 @@ final class Article extends Abstracts\Content
 				$this->_set('draft', $results->draft === '1');
 				$this->_set('url', $results->url);
 				$this->_set('img', $results->img);
+				$this->_set('image', $this->_getImage($results->img));
 				$this->_set('posted_by', $results->posted_by);
 				$this->_set('keywords', $keywords);
 				$this->_set('description', $results->description);
