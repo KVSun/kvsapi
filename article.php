@@ -123,6 +123,17 @@ final class Article extends Abstracts\Content
 				}
 			}
 		}
+		foreach ($dom->documentElement->getElementsByTagName('img') as $img) {
+			if ($img->hasAttribute('data-image-id')) {
+				$id = $img->getAttribute('data-image-id');
+				$figure = $dom->createElement('figure');
+				$img->parentNode->replaceChild($figure, $img);
+				$figure->setAttribute('itemprop', 'image');
+				$figure->setAttribute('itemtype', 'http://schema.org/ImageObject');
+				$figure->setAttribute('itemscope', null);
+				$this->_addPicture($figure, $id);
+			}
+		}
 		return $dom->saveHTML($dom->documentElement->firstChild);
 	}
 
