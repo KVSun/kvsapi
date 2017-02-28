@@ -79,7 +79,7 @@ final class Article extends Abstracts\Content
 				$this->_set('category', $cat);
 				$this->_set('title', $results->title);
 				$this->_set('author', $results->author);
-				$this->_set('content', $results->content);
+				$this->_set('content', $this->_articleBuilder($results->content));
 				$this->_set('posted', $results->posted);
 				$this->_set('updated', $results->updated);
 				$this->_set('draft', $results->draft === '1');
@@ -93,6 +93,37 @@ final class Article extends Abstracts\Content
 				$this->_set('comments', Comments::getComments($this->_pdo, $this->id, $cat->id));
 			}
 		}
+	}
+
+	/**
+	 * Updates article HTML, creating responsive images
+	 * @param  String $content Article HTML
+	 * @return String          Updated HTML as string
+	 */
+	protected function _articleBuilder(String $content): String
+	{
+		$dom = new \DOMDocument('1.0', 'UTF-8');
+		libxml_use_internal_errors(true);
+		$dom->loadHTML("<div>$content</div>");
+		libxml_clear_errors();
+
+		foreach ($dom->documentElement->getElementsByTagName('figure') as $figure) {
+			if ($figure->hasAttribute('data-image-id')) {
+				try {
+					$figure->setAttribute('itemprop', 'image');
+					$figure->setAttribute('itemtype', 'http://schema.org/ImageObject');
+					$figure->setAttribute('itemscope', null);
+					while ($figure->hasChildNodes() and $node = $figure->firstChild) {
+						$figure->removeChild($node);
+					}
+
+					$this->_addPicture($figure, $figure->getAttribute('data-image-id'));
+				} catch (\Throwable $e) {
+					trigger_error($e->getMessage());
+				}
+			}
+		}
+		return $dom->saveHTML($dom->documentElement->firstChild);
 	}
 
 	/**
