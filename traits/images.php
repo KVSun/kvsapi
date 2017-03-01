@@ -28,6 +28,99 @@ trait Images
 	];
 
 	/**
+	 * Extract image data using microdata
+	 * @param  DOMElement $figure `<figure><picture>...</picture>...</figure>`
+	 * @return Array              Array of extracted data
+	 */
+	final public function parseFigure(\DOMElement $figure): Array
+	{
+		$data = [];
+		if (
+			$figure->tagName === 'figure'
+			and $figure->hasAttribute('itemtype')
+			and $figure->getAttribute('itemtype') === 'http://schema.org/ImageObject'
+		) {
+			$xpath = new \DOMXpath($figure->ownerDocument);
+			if ($url = $xpath->query('.//*[@itemprop="url"]', $figure) and $url->length) {
+				$url = $url->item(0);
+				if ($url->hasAttribute('src')) {
+					$data['path'] = $url->getAttribute('src');
+				} elseif ($url->hasAttribute('content')) {
+					$data['path'] = $url->getAttribute('content');
+				} else {
+					$data['path'] = $url->textContent;
+				}
+				unset($url);
+			}
+			if ($cap = $xpath->query('.//*[@itemprop="caption"]', $figure) and $cap->length) {
+				$cap = $cap->item(0);
+				if ($cap->hasAttribute('content')) {
+					$data['caption'] = $cap->getAttribute('content');
+				} else {
+					$data['caption'] = $cap->textContent;
+				}
+				unset($cap);
+			}
+			if ($creator = $xpath->query('.//*[@itemprop="name"]', $figure) and $creator->length) {
+				$creator = $creator->item(0);
+				if ($creator->hasAttribute('content')) {
+					$data['creator'] = $creator->getAttribute('content');
+				} else {
+					$data['creator'] = $creator->textContent;
+				}
+				unset($creator);
+			}
+			if ($size = $xpath->query('.//*[@itemprop="contentSize"]', $figure)and $size->length) {
+				$size = $size->item(0);
+				if ($size->hasAttribute('content')) {
+					$data['size'] = intval($size->getAttribute('content')) * 1024;
+				} else {
+					$data['size'] = intval($size->textContent) * 1024;
+				}
+				unset($size);
+			}
+			if ($width = $xpath->query('.//*[@itemprop="width"]', $figure) and $width->length) {
+				$width = $width->item(0);
+				if ($width->hasAttribute('content')) {
+					$data['width'] = intval($width->getAttribute('content'));
+				} else {
+					$data['width'] = intval($width->textContent);
+				}
+				unset($width);
+			}
+			if ($height = $xpath->query('.//*[@itemprop="height"]', $figure) and $height->length) {
+				$height = $height->item(0);
+				if ($height->hasAttribute('content')) {
+					$data['height'] = intval($height->getAttribute('content'));
+				} else {
+					$data['height'] = intval($height->textContent);
+				}
+				unset($size);
+			}
+			if ($date = $xpath->query('.//*[@itemprop="uploadDate"]', $figure) and $date->length) {
+				$date = $date->item(0);
+				if ($date->hasAttribute('content')) {
+					$data['uploadDate'] = $date->getAttribute('content');
+				} else {
+					$data['uploadDate'] = $date->textContent;
+				}
+				unset($date);
+			}
+			if ($format = $xpath->query('.//*[@itemprop="fileFormat"]', $figure) and $format->length) {
+				$format = $format->item(0);
+				if ($format->hasAttribute('content')) {
+					$data['format'] = $format->getAttribute('content');
+				} else {
+					$data['format'] = $format->textContent;
+				}
+				unset($format);
+			}
+		}
+		return $data;
+
+	}
+
+	/**
 	 * Add images to `srcset` table
 	 * @param  Array $sources   Array of image sources to add
 	 * @param  Int   $parent_id Parent ID (PDO::lastInsertId())
@@ -99,6 +192,7 @@ trait Images
 					`height`,
 					`width`,
 					`creator`,
+					`uploadDate`,
 					`caption`,
 					`alt`,
 					`uploadedBy`
@@ -109,13 +203,16 @@ trait Images
 					:height,
 					:width,
 					:creator,
+					:date,
 					:caption,
 					:alt,
 					:userId
 				) ON DUPLICATE KEY UPDATE
-					`creator` = COALESCE(:creator, `creator`),
-					`caption` = COALESCE(:caption, `caption`),
-					`alt`     = COALESCE(:alt,     `alt`);'
+					`creator`    = COALESCE(:creator, `creator`),
+					`caption`    = COALESCE(:caption, `caption`),
+					`alt`        = COALESCE(:alt,     `alt`),
+					`uploadDate` = COALESCE(:date,    `uploadDate`),
+					`uploadedBy` = :userId;'
 			);
 			static::$_add_img_stm->execute([
 				'path'    => $img['path'],
@@ -124,6 +221,7 @@ trait Images
 				'height'  => $img['height'],
 				'width'   => $img['width'],
 				'creator' => $img['creator'] ?? null,
+				'data'    => $img['uploadDate'] ?? null,
 				'caption' => $img['caption'] ?? null,
 				'alt'     => $img['alt']     ?? null,
 				'userId'  => $user->id,
