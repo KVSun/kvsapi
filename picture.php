@@ -1,7 +1,8 @@
 <?php
 
 namespace KVSun\KVSAPI;
-use \shgysk8zer0\Core\{PDO, Console};
+use \shgysk8zer0\Core\{PDO};
+
 final class Picture
 {
 	use Traits\Images;
@@ -11,6 +12,16 @@ final class Picture
 	public function __construct(PDO $pdo)
 	{
 		$this->_pdo = $pdo;
+	}
+
+	public function __invoke(Int $id, \DOMElement $parent = null): \DOMElement
+	{
+		return $this->getFigure($id, $parent);
+	}
+
+	public function getImageData(Int $img_id): \stdClass
+	{
+		return $this->_getImage($img_id);
 	}
 
 	public function getFigure(Int $id, \DOMElement $parent = null): \DOMElement
@@ -35,10 +46,5 @@ final class Picture
 	{
 		$picture = $this->getPicture($id);
 		return $picture->ownerDocument->saveHTML($picture);
-	}
-
-	public function __invoke(Int $id, \DOMElement $parent = null): \DOMElement
-	{
-		return $this->getFigure($id, $parent);
 	}
 }
