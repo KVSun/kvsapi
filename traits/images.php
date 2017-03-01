@@ -109,9 +109,9 @@ trait Images
 			if ($format = $xpath->query('.//*[@itemprop="fileFormat"]', $figure) and $format->length) {
 				$format = $format->item(0);
 				if ($format->hasAttribute('content')) {
-					$data['format'] = $format->getAttribute('content');
+					$data['type'] = $format->getAttribute('content');
 				} else {
-					$data['format'] = $format->textContent;
+					$data['type'] = $format->textContent;
 				}
 				unset($format);
 			}
@@ -214,25 +214,29 @@ trait Images
 					`uploadDate` = COALESCE(:date,    `uploadDate`),
 					`uploadedBy` = :userId;'
 			);
-			static::$_add_img_stm->execute([
-				'path'    => $img['path'],
-				'format'  => $img['type'],
-				'size'    => $img['size'],
-				'height'  => $img['height'],
-				'width'   => $img['width'],
-				'creator' => $img['creator'] ?? null,
-				'data'    => $img['uploadDate'] ?? null,
-				'caption' => $img['caption'] ?? null,
-				'alt'     => $img['alt']     ?? null,
-				'userId'  => $user->id,
-			]);
-			if (intval(static::$_add_img_stm->errorCode()) !== 0) {
-				throw new \RuntimeException(
-					'SQL Error: '. join(PHP_EOL, static::$_add_img_stm->errorInfo())
-				);
-			} else {
-				return $this->_pdo->lastInsertId ?? $this->getImageId($img['path']);
+		}
+		static::$_add_img_stm->execute([
+			'path'    => '/'. ltrim($img['path'], '/'),
+			'format'  => $img['type'],
+			'size'    => $img['size'],
+			'height'  => $img['height'],
+			'width'   => $img['width'],
+			'creator' => $img['creator'] ?? null,
+			'date'    => $img['uploadDate'] ?? null,
+			'caption' => $img['caption'] ?? null,
+			'alt'     => $img['alt']     ?? null,
+			'userId'  => $user->id,
+		]);
+		if (intval(static::$_add_img_stm->errorCode()) !== 0) {
+			throw new \RuntimeException(
+				'SQL Error: '. join(PHP_EOL, static::$_add_img_stm->errorInfo())
+			);
+		} else {
+			return $insert_id = intval($this->_pdo->lastInsertId());
+			if ($insert_id <= 0) {
+				$insert_id = $this->getImageId($img['path']);
 			}
+			return $insert_id;
 		}
 	}
 
@@ -248,8 +252,9 @@ trait Images
 				'SELECT `id` FROM `images` WHERE `path` = :path LIMIT 1;'
 			);
 		}
-		static::$_img_id_stm->execute(['path' => $path]);
+		static::$_img_id_stm->execute(['path' => '/' . ltrim($path, '/')]);
 		$img = static::$_img_id_stm->fetchObject() ?? new \stdClass();
+
 		return $img->id ?? 0;
 	}
 
