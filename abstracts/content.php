@@ -13,6 +13,8 @@ abstract class Content implements \JsonSerializable
 	use Magic;
 	use Head;
 
+	private $_status = 200;
+
 	/**
 	 * [$_pdo description]
 	 * @var \PDO
@@ -30,6 +32,24 @@ abstract class Content implements \JsonSerializable
 		$this->_setDefaults($this::DEFAULTS);
 		$this->_parseURL($url);
 		$this->_setData($this->_pdo->prepare($this->_getSQL()));
+	}
+
+	/**
+	 * Set HTTP response code
+	 * @param Int $status 200, 404, etc
+	 */
+	final public function setStatus(Int $status)
+	{
+		$this->_status = $status;
+	}
+
+	/**
+	 * Get HTTP response code
+	 * @return Int 200, 404, etc
+	 */
+	final public function getStatus(): Int
+	{
+		return $this->_status;
 	}
 
 	/**

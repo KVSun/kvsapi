@@ -91,6 +91,8 @@ final class Article extends Abstracts\Content
 				$this->_set('description', $results->description);
 				$this->_set('is_free', $results->isFree === '1' ?? true);
 				$this->_set('comments', Comments::getComments($this->_pdo, $this->id, $cat->id));
+			} else {
+				$this->setStatus(404);
 			}
 		}
 	}

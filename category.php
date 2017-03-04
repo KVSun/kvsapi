@@ -66,6 +66,7 @@ final class Category extends Abstracts\Content
 			`posts`.`img`,
 			`posts`.`url`,
 			`posts`.`posted`,
+			`posts`.`isFree`,
 			`categories`.`url-name` AS `catURL`,
 			`categories`.`name`,
 			`categories`.`icon`,
@@ -88,6 +89,9 @@ final class Category extends Abstracts\Content
 		$stm->bindParam(':name', $cat_url);
 		$stm->execute();
 		$results = $stm->fetchAll(PDO::FETCH_CLASS);
+		if (empty($results)) {
+			$this->setStatus(404);
+		}
 
 		$this->_set('icon', $results[0]->icon ?? null);
 		$this->_set('category', $cat_url ?? null);
