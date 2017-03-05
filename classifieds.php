@@ -8,9 +8,15 @@ use \PDOStatement;
 final class Classifieds extends Abstracts\Content
 {
 	const DEFAULTS = [
-		'ads'        => [],
-		'categories' => [],
-		'content'    => [],
+		'ads'         => [],
+		'categories'  => [],
+		'content'     => [],
+		'title'       => 'Classifieds',
+		'description' => '',
+		'keywords'    => [
+			'classifieds',
+			'help wanted',
+		],
 	];
 
 	const TYPE = 'classifieds';
