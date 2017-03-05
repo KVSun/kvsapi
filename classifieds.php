@@ -23,9 +23,11 @@ final class Classifieds extends Abstracts\Content
 
 	const ALLOWED_TAGS = '<b><p><div><br><hr>';
 
-	const IMG_DIR = '/classifieds/01+Current+Graphics/';
+	const IMG_DIR = '/classifieds/01%20Current%20Graphics/';
 
 	const AD_FEED = '/01 Current Graphics/display ad feed.5.1.csv';
+
+	const DISP_AD_PATTERN = '/\s*\*+\s*DISPLAY\s+AD\s*\*+\s?/im';
 
 	private $_dir = '';
 
@@ -99,13 +101,20 @@ final class Classifieds extends Abstracts\Content
 				and $scanner->isReadable()
 				and array_key_exists($scanner->getBasename('.html'), $cats)
 			) {
-				$html = file_get_contents($scanner->getPathname());
-				$html = strip_tags($html, self::ALLOWED_TAGS);
-				$content[$scanner->getBasename('.html')] = $html;
+				$content[$scanner->getBasename('.html')] = $this->_parseHTML($scanner->getPathname());
 			}
 			$scanner->next();
 		}
 		return $content;
+	}
+
+	private function _parseHTML(String $fname): String
+	{
+		$html = file_get_contents($fname);
+		$html = strip_tags($html, self::ALLOWED_TAGS);
+		$html = preg_replace(self::DISP_AD_PATTERN, null, $html);
+		$html = nl2br($html);
+		return $html;
 	}
 
 	/**
@@ -142,7 +151,7 @@ final class Classifieds extends Abstracts\Content
 				}
 				$rows[$row['Category Code']][] = [
 					'text'  => $row['Ad Text'],
-					'image' => self::IMG_DIR . urlencode($row['Filename']),
+					'image' => self::IMG_DIR . rawurlencode($row['Filename']),
 				];
 			}
 		}
