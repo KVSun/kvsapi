@@ -113,7 +113,6 @@ final class Classifieds extends Abstracts\Content
 		$html = file_get_contents($fname);
 		$html = strip_tags($html, self::ALLOWED_TAGS);
 		$html = preg_replace(self::DISP_AD_PATTERN, null, $html);
-		$html = nl2br($html);
 		return $html;
 	}
 
