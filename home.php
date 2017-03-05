@@ -65,7 +65,7 @@ final class Home extends Abstracts\Content
 		FROM `posts`
 		JOIN `categories` ON `categories`.`id` = `posts`.`cat-id`
 		WHERE `categories`.`url-name` = :cat
-		ORDER BY `posts`.`posted` DESC
+		ORDER BY `posts`.`posted`, `posts`.`sort` DESC
 		LIMIT {$this->_count};";
 	}
 

@@ -90,6 +90,7 @@ final class Article extends Abstracts\Content
 				$this->_set('keywords', $keywords);
 				$this->_set('description', $results->description);
 				$this->_set('is_free', $results->isFree === '1' ?? true);
+				$this->_set('sort', intval($results->sort));
 				$this->_set('comments', Comments::getComments($this->_pdo, $this->id, $cat->id));
 			} else {
 				$this->setStatus(404);
@@ -145,6 +146,7 @@ final class Article extends Abstracts\Content
 			`categories`.`url-name` AS `catURL`,
 			`categories`.`id` AS `catID`,
 			`posts`.`title`,
+			`posts`.`sort`,
 			`posts`.`author`,
 			`posts`.`content`,
 			`posts`.`posted`,
