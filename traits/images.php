@@ -221,10 +221,10 @@ trait Images
 			'size'    => $img['size'],
 			'height'  => $img['height'],
 			'width'   => $img['width'],
-			'creator' => $img['creator'] ?? null,
+			'creator' => $img['creator']    ?? null,
 			'date'    => $img['uploadDate'] ?? null,
-			'caption' => $img['caption'] ?? null,
-			'alt'     => $img['alt']     ?? null,
+			'caption' => $img['caption']    ?? null,
+			'alt'     => $img['alt']        ?? null,
 			'userId'  => $user->id,
 		]);
 		if (intval(static::$_add_img_stm->errorCode()) !== 0) {
@@ -232,11 +232,11 @@ trait Images
 				'SQL Error: '. join(PHP_EOL, static::$_add_img_stm->errorInfo())
 			);
 		} else {
-			return $insert_id = intval($this->_pdo->lastInsertId());
-			if ($insert_id <= 0) {
-				$insert_id = $this->getImageId($img['path']);
+			if ($insert_id = $this->_pdo->lastInsertId()) {
+				return $insert_id;
+			} else {
+				return $this->getImageId($img['path']);
 			}
-			return $insert_id;
 		}
 	}
 
