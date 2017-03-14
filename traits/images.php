@@ -368,39 +368,48 @@ trait Images
 
 	/**
 	 * Appends a `<picture>` (responsive image) with microdata to an element
-	 * @param DOMElement  $parent The element to append `<picture>` to
-	 * @param Int         $img_id `images`.`id`
+	 * @param DOMElement  $parent        The element to append `<picture>` to
+	 * @param Int         $img_id        `images`.`id`
+	 * @param Array       $sizes         Media queries to hint at image size to use
+	 * @param Bool        $use_microdata Whether or not to set microdata for image
 	 * @return DOMElement The `<picture>`
 	 */
-	final protected function _getPicture(\DOMElement $parent, \stdClass $image): \DOMElement
+	final protected function _getPicture(
+		\DOMElement $parent,
+		\stdClass   $image,
+		Array       $sizes         = array(),
+		Bool        $use_microdata = true
+		): \DOMElement
 	{
 		if (! (static::_validImage($image) and isset($image->id))) {
 			throw new \InvalidArgumentException('Cannot create an image without required attributes');
 		}
 		$dom = $parent->ownerDocument;
 		$picture = $parent->appendChild($dom->createElement('picture'));
-		$this->_addSources($picture,  $this->_getSources($image->id));
+		$this->_addSources($picture,  $this->_getSources($image->id), $sizes);
 		$img = $picture->appendChild($dom->createElement('img'));
+		if ($use_microdata) {
+			$img->setAttribute('itemprop', 'url');
+			$meta = $parent->appendChild($dom->createElement('meta'));
+			$meta->setAttribute('itemprop', 'width');
+			$meta->setAttribute('content', $image->width);
+			$meta = $parent->appendChild($dom->createElement('meta'));
+			$meta->setAttribute('itemprop', 'height');
+			$meta->setAttribute('content', $image->height);
+			$meta = $parent->appendChild($dom->createElement('meta'));
+			$meta->setAttribute('itemprop', 'fileFormat');
+			$meta->setAttribute('content', $image->fileFormat);
+			$meta = $parent->appendChild($dom->createElement('meta'));
+			$meta->setAttribute('itemprop', 'contentSize');
+			$meta->setAttribute('content', round($image->contentSize / 1024, 1) . ' kB');
+			$meta = $parent->appendChild($dom->createElement('meta'));
+			$meta->setAttribute('itemprop', 'uploadDate');
+			$meta->setAttribute('content', $image->uploadDate);
+		}
 		$img->setAttribute('src', $image->path);
 		$img->setAttribute('width', $image->width);
 		$img->setAttribute('height', $image->height);
 		$img->setAttribute('alt', $image->alt ?? '');
-		$img->setAttribute('itemprop', 'url');
-		$meta = $parent->appendChild($dom->createElement('meta'));
-		$meta->setAttribute('itemprop', 'width');
-		$meta->setAttribute('content', $image->width);
-		$meta = $parent->appendChild($dom->createElement('meta'));
-		$meta->setAttribute('itemprop', 'height');
-		$meta->setAttribute('content', $image->height);
-		$meta = $parent->appendChild($dom->createElement('meta'));
-		$meta->setAttribute('itemprop', 'fileFormat');
-		$meta->setAttribute('content', $image->fileFormat);
-		$meta = $parent->appendChild($dom->createElement('meta'));
-		$meta->setAttribute('itemprop', 'contentSize');
-		$meta->setAttribute('content', round($image->contentSize / 1024, 1) . ' kB');
-		$meta = $parent->appendChild($dom->createElement('meta'));
-		$meta->setAttribute('itemprop', 'uploadDate');
-		$meta->setAttribute('content', $image->uploadDate);
 
 		return $picture;
 	}
@@ -421,9 +430,14 @@ trait Images
 	 * creator or caption are set
 	 * @param  Int         $img_id Image ID from `posts.img`
 	 * @param  DOMElement  $parent Element to appdend it to
-	 * @return DOMElement         Newly created `<figure>`
+	 * @param  Array       $sizes  Media queries to hint at image size to use
+	 * @return DOMElement          Newly created `<figure>`
 	 */
-	final protected function _getFigure(Int $img_id, \DOMElement $parent = null): \DOMElement
+	final protected function _getFigure(
+		Int         $img_id,
+		\DOMElement $parent = null,
+		Array       $sizes  = array()
+		): \DOMElement
 	{
 		if (is_null($parent)) {
 			$dom = new \DOMDocument('1.0', 'UTF-8');
@@ -439,7 +453,7 @@ trait Images
 		$figure->setAttribute('itemscope', null);
 		$image = $this->_getImage($img_id);
 		$image->id = $img_id;
-		$this->_getPicture($figure, $image);
+		$this->_getPicture($figure, $image, $sizes);
 		if (isset($image->caption) or isset($image->creator)) {
 			$caption = $figure->appendChild($dom->createElement('figcaption'));
 			if (isset($image->creator)) {
@@ -463,8 +477,12 @@ trait Images
 	 * Adds `<source>`s to a `<picture>`
 	 * @param DOMElement $parent  `<picture>` to append `<source>`s to
 	 * @param Array      $sources An array, such as from `srcset` table
+	 * @param Array      $sizes   Media queries to hint at image size to use
 	 */
-	final protected function _addSources(\DOMElement $parent, Array $sources)
+	final protected function _addSources(
+		\DOMElement $parent,
+		Array       $sources,
+		Array       $sizes = array())
 	{
 		if ($parent->tagName !== 'picture') {
 			throw new \InvalidArgumentException("Expected a <picture> but got a <{$parent->tagName}>");
@@ -477,6 +495,9 @@ trait Images
 				$srcset[$src->format] = $parent->appendChild($parent->ownerDocument->createElement('source'));
 				$srcs[$src->format] = [];
 				$srcset[$src->format]->setAttribute('type', $src->format);
+				if (! empty($sizes)) {
+					$srcset[$src->format]->setAttribute('sizes', join(', ', $sizes));
+				}
 			}
 			$srcs[$src->format][] = "{$src->path} {$src->width}w";
 		}
