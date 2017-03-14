@@ -7,8 +7,15 @@ use \stdClass;
 final class Article extends Abstracts\Content
 {
 	use Traits\Images;
-	public function __construct(PDO $pdo, String $url = null)
+
+	const MEDIA_QUERIES = [
+		'(max-width: 800px) 95%',
+		'70vw',
+	];
+	private $_media_queries = [];
+	public function __construct(PDO $pdo, String $url = null, Array $img_sizes = self::MEDIA_QUERIES)
 	{
+		$this->_media_queries = $img_sizes;
 		$this->_init($pdo, $url);
 	}
 
@@ -115,7 +122,8 @@ final class Article extends Abstracts\Content
 				try {
 					$new_fig = $this->_getFigure(
 						$figure->getAttribute('data-image-id'),
-						$figure->parentNode
+						$figure->parentNode,
+						$this->_media_queries
 					);
 					$figure->parentNode->replaceChild($new_fig, $figure);
 				} catch (\Throwable $e) {
