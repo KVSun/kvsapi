@@ -74,7 +74,7 @@ final class Category extends Abstracts\Content
 		FROM `posts`
 		JOIN `categories` ON `categories`.`id` = `posts`.`cat-id`
 		WHERE `categories`.`url-name` = :name
-		ORDER BY `posts`.`posted`, `posts`.`sort` DESC
+		ORDER BY `posted` DESC, `posts`.`sort` DESC
 		LIMIT $this->_start, $this->_end;";
 	}
 

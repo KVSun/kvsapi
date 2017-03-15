@@ -34,7 +34,7 @@ final class Home extends Abstracts\Content
 		PDO    $pdo,
 		String  $url        = null,
 		Array   $categories,
-		Int     $count      = 12
+		Int     $count      = 16
 	)
 	{
 		$this->_categories = $categories;
@@ -65,7 +65,7 @@ final class Home extends Abstracts\Content
 		FROM `posts`
 		JOIN `categories` ON `categories`.`id` = `posts`.`cat-id`
 		WHERE `categories`.`url-name` = :cat
-		ORDER BY `posts`.`posted`, `posts`.`sort` DESC
+		ORDER BY `posted` DESC, `posts`.`sort` DESC
 		LIMIT {$this->_count};";
 	}
 
