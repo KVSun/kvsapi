@@ -57,7 +57,10 @@ trait Images
 				if ($cap->hasAttribute('content')) {
 					$data['caption'] = $cap->getAttribute('content');
 				} else {
-					$data['caption'] = $cap->textContent;
+					$data['caption'] = trim($cap->textContent);
+					if (empty($data['caption'])) {
+						unset($data['caption']);
+					}
 				}
 				unset($cap);
 			}
@@ -66,7 +69,10 @@ trait Images
 				if ($creator->hasAttribute('content')) {
 					$data['creator'] = $creator->getAttribute('content');
 				} else {
-					$data['creator'] = $creator->textContent;
+					$data['creator'] = trim($creator->textContent);
+					if (empty($data['creator'])) {
+						unset($data['creator']);
+					}
 				}
 				unset($creator);
 			}
